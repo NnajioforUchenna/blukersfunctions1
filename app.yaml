@@ -1,0 +1,11 @@
+runtime: python311
+instance_class: F4
+service: development
+handlers:
+- url: /.*
+  script: main.py
+vpc_access_connector:
+ name: projects/top-design-395510/locations/us-east1/connectors/blukers-vpc-connect
+env_variables:
+     REDISHOST: '10.167.29.67'
+     REDISPORT: '6379'
