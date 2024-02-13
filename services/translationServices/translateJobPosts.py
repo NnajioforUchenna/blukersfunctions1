@@ -5,6 +5,7 @@ from services.dbServices.firebase_services import db
 import os
 from html import unescape
 from xml.etree import ElementTree as ET
+from pathlib import Path
 
 
 def getJobPostsById(job_id):
@@ -45,8 +46,11 @@ def convertJobPostsToDocument(jobPosts):
 
 
 def translateDocument(document, target_language):
-    # Set the path to the key file
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'serviceKey2.json'
+    # Define the path to the key file
+    key_file_path = Path('../../serviceKey2.json')
+
+    # Set the environment variable
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = str(key_file_path)
 
     # Instantiate a client
     translate_client = translate.Client()

@@ -1,4 +1,7 @@
 import pprint
+import time
+import random
+import traceback
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import talent_v4beta1
@@ -7,10 +10,10 @@ from services.dbServices.firebase_services import *
 from services.helperFunctions import remove_special_characters, hash_dict
 from services.searchServices.persistRecords import is_record_written, write_record
 
-credentials = service_account.Credentials.from_service_account_file('../serviceKey2.json')
+credentials = service_account.Credentials.from_service_account_file('../../serviceKey2.json')
 job_client = talent_v4beta1.JobServiceClient(credentials=credentials)
 company_client = talent_v4beta1.CompanyServiceClient(credentials=credentials)
-project_id = "top-design-395510"
+project_id = "blukerserver"
 tenant_id = "Blukers-Jobs"  # Replace with your Tenant ID if using tenancy, otherwise, you might not need this line
 
 # Getting all Created Companies to Avoid Duplicates
@@ -78,7 +81,7 @@ def format_address(address_dict):
 
 
 def uploadJobPost2CloudTalentSolution(job_data):
-    collection_priority_value = 2
+    collection_priority_value = 1
 
     custom_attrs = {
         'jobPostId': create_custom_attribute(job_data['jobPostId']),
@@ -89,7 +92,7 @@ def uploadJobPost2CloudTalentSolution(job_data):
     requisition_id = remove_special_characters(job_data['jobPostId'])
     description = remove_special_characters(job_data['jobDescription'])
     company_name = job_data['companyName']
-    addresses = [format_address(job_data['address'][0])]
+    addresses = [format_address(job_data['address'])] # for ScrappedTexas Jobs Add [0]
 
     # Get Company Name
     external_id = remove_special_characters(company_name).replace(" ", "").lower()
@@ -115,8 +118,20 @@ def uploadJobPost2CloudTalentSolution(job_data):
         print(f"Job with requisition ID {requisition_id} already exists. Skipping.")
 
 
+def get_date():
+    # Get the current date and time
+    now = time.time_ns() // 1_000_000
+
+    # Generate a random number of seconds, not more than 24 hours
+    random_seconds = random.randint(0, 84600)
+
+    # Calculate the new date and time by adding the random number of seconds to now
+    random_date = now - random_seconds
+
+    return random_date
+
 # Getting all Jobs from Firebase
-jobs_collection = db.collection('ScrappedTexasJobs')
+jobs_collection = db.collection('ScrappedJobs')
 jobs = jobs_collection.get()
 
 print(f"Total jobs: {len(jobs)}")
@@ -125,6 +140,7 @@ count = 0
 companyDict = getAllCompanies(project_id)
 for job in jobs:
     job_data = job.to_dict()
+    job_data['dateCreated'] = get_date()
     count += 1
     hashKey = hash_dict(job_data)
     if not is_record_written(hashKey):
@@ -134,8 +150,8 @@ for job in jobs:
             write_record(hashKey)
         except Exception as e:
             print(f"Error uploading job {count}. {job_data['jobPostId']}. Skipping.")
+            # Optionally, print the type of exception for clarity
+            print(f"Exception type: {type(e).__name__}")
+
     else:
         print(f"Record {count} already written")
-
-
-
